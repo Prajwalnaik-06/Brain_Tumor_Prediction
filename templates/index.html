@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brain Tumor MRI Prediction</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            background: #fff;
+            padding: 40px; /* Reduced padding for smaller screens */
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            font-size: 24px; /* Adjusted font size */
+        }
+        input[type="file"] {
+            margin: 20px 0;
+            width: 100%; /* Full width for input */
+        }
+        button {
+            background: #24b1e0;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            border-radius: 5px;
+            width: 100%; /* Full width for button */
+        }
+        button:hover {
+            background: #16cf4a;
+        }
+        #result {
+            margin-top: 20px;
+            text-align: center;
+        }
+        #loading {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+        }
+        #imagePreview {
+            margin-top: 20px;
+            max-width: 100%;
+            height: auto;
+            display: none; /* Initially hidden */
+            border: 2px solid #080e09; /* black border */
+            border-radius: 5px; /* Optional: rounded corners */
+            padding: 10px; /* Reduced padding for smaller screens */
+        }
+        /* Spinner styles */
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #28a745;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-left: 10px;
+        }
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Media Queries for Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px; /* Less padding on smaller screens */
+            }
+            h1 {
+                font-size: 20px; /* Smaller font size for headings */
+            }
+            button {
+                padding: 10px; /* Adjust button padding */
+            }
+        }
+
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 18px; /* Even smaller font size for very small screens */
+            }
+            button {
+                padding: 8px; /* Further adjust button padding */
+            }
+            #imagePreview {
+                padding: 5px; /* Less padding for image preview */
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Brain Tumor MRI Prediction</h1>
+        <input type="file" id="fileInput" accept="image/*" aria-label="Upload an image">
+        <button id="uploadButton">Upload and Predict</button>
+        <img id="imagePreview" alt="Image Preview">
+        <div id="loading">
+            Loading...
+            <div class="spinner"></div>
+        </div>
+        <div id="result"></div>
+    </div>
+
+    <script>
+        document.getElementById('fileInput').addEventListener('change', function() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const imagePreview = document.getElementById('imagePreview');
+                    imagePreview.src = e.target.result; // Set the image source to the file's data URL
+                    imagePreview.style.display = 'block'; // Show the image preview
+                }
+                reader.readAsDataURL(file); // Read the file as a data URL
+            }
+        });
+
+        document.getElementById('uploadButton').addEventListener('click', function() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                alert('Please select an image file.');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            // Show loading indicator
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('result').innerHTML = ''; // Clear previous results
+
+            fetch('/predict', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                // Hide loading indicator
+                document.getElementById('loading').style.display = 'none';
+
+                // Clear previous result before displaying new prediction
+                document.getElementById('result').innerHTML = '';
+
+                // Display the predicted class
+                if (data.predicted_class) {
+                    document.getElementById('result').innerHTML = `<h2>Predicted Class: ${data.predicted_class}</h2>`;
+                } else {
+                    document.getElementById('result').innerHTML = `<h2>Error: ${data.error}</h2>`;
+                }
+            })
+            .catch(error => {
+                // Hide loading indicator
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('result').innerHTML = `<h2>Error: ${error.message}</h2>`;
+            });
+        });
+    </script>
+</body>
+</html>
